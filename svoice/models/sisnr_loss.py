@@ -40,7 +40,7 @@ def cal_si_snr_with_pit(source, estimate_source, source_lengths):
     B, C, T = source.size()
     # mask padding position along T
     mask = get_mask(source, source_lengths)
-    estimate_source *= mask
+    estimate_source = estimate_source*mask
 
     # Step 1. Zero-mean norm
     num_samples = source_lengths.view(-1, 1, 1).float()  # [B, 1, 1]
