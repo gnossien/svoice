@@ -39,15 +39,17 @@ def find_audio_files(path, exts=[".wav"], progress=True):
 
 
 class Audioset:
-    def __init__(self, files, length=None, stride=None, pad=True, augment=None):
+    def __init__(self, files, is_mix = False, length=None, stride=None, pad=True, augment=None):
         """
         files should be a list [(file, length)]
         """
         self.files = files
         self.num_examples = []
+        self.file_length = []
         self.length = length
         self.stride = stride or length
         self.augment = augment
+        self.mix_set = is_mix
         for file, file_length in self.files:
             if length is None:
                 examples = 1
@@ -59,6 +61,7 @@ class Audioset:
             else:
                 examples = (file_length - self.length) // self.stride + 1
             self.num_examples.append(examples)
+            self.file_length.append(file_length)
 
     def __len__(self):
         return sum(self.num_examples)
@@ -74,16 +77,35 @@ class Audioset:
                 offset = self.stride * index
                 num_frames = self.length
             #  out = th.Tensor(sf.read(str(file), start=offset, frames=num_frames)[0]).unsqueeze(0)
-            if 0 != num_frames :
-                out = torchaudio.load(str(file), frame_offset=offset,num_frames=num_frames)[0]
-            else : 
-                out = torchaudio.load(str(file), frame_offset=offset)[0]
+            else :
+                num_frames = self.file_length[index]    
+            
+            if self.mix_set :
+                mix_files = file
+                mix_array = []
+                for file_path in mix_files:
+                    mix = torchaudio.load(str(file_path), frame_offset=offset, num_frames=num_frames)[0]    
+                    
+                    if self.augment:
+                        mix = self.augment(mix.squeeze(0).numpy()).unsqueeze(0)
+                    if num_frames:
+                        mix = F.pad(mix, (0, num_frames - mix.shape[-1]))
 
-            if self.augment:
-                out = self.augment(out.squeeze(0).numpy()).unsqueeze(0)
-            if num_frames:
-                out = F.pad(out, (0, num_frames - out.shape[-1]))
-            return out[0]
+                    mix_array.append(mix[0])   
+                result = mix_array    
+            else :    
+                out = torchaudio.load(str(file), frame_offset=offset, num_frames=num_frames)[0]
+
+                if self.augment:
+                    out = self.augment(out.squeeze(0).numpy()).unsqueeze(0)
+                if num_frames:
+                    out = F.pad(out, (0, num_frames - out.shape[-1]))
+    
+                result = out[0]
+                if result == None:
+                    print(f"load file {file}")
+
+            return result
 
 
 if __name__ == "__main__":

@@ -47,20 +47,22 @@ class Trainset:
         stride = int(sample_rate * stride)
 
         kw = {'length': length, 'stride': stride, 'pad': pad}
-        self.mix_set = Audioset(sort(mix_infos), **kw)
+        self.mix_set = Audioset(sort(mix_infos), True, **kw)
 
         self.sets = list()
         for s_info in s_infos:
-            self.sets.append(Audioset(sort(s_info), **kw))
+            self.sets.append(Audioset(sort(s_info), False, **kw))
 
         # verify all sets has the same size
         for s in self.sets:
+            print (f'{len(s)} and {len(self.mix_set)}')
             assert len(s) == len(self.mix_set)
 
     def __getitem__(self, index):
         mix_sig = self.mix_set[index]
         tgt_sig = [self.sets[i][index] for i in range(len(self.sets))]
-        return self.mix_set[index], torch.LongTensor([mix_sig.shape[0]]), torch.stack(tgt_sig)
+            
+        return torch.stack(mix_sig), torch.LongTensor([mix_sig[0].shape[0]]), torch.stack(tgt_sig)
 
     def __len__(self):
         return len(self.mix_set)
@@ -84,17 +86,18 @@ class Validset:
         for s_json in s_jsons:
             with open(s_json, 'r') as f:
                 s_infos.append(json.load(f))
-        self.mix_set = Audioset(sort(mix_infos))
+        self.mix_set = Audioset(sort(mix_infos), True)
         self.sets = list()
         for s_info in s_infos:
-            self.sets.append(Audioset(sort(s_info)))
+            self.sets.append(Audioset(sort(s_info),False))
         for s in self.sets:
+            print (f'{len(s)} and {len(self.mix_set)}')
             assert len(s) == len(self.mix_set)
 
     def __getitem__(self, index):
         mix_sig = self.mix_set[index]
         tgt_sig = [self.sets[i][index] for i in range(len(self.sets))]
-        return self.mix_set[index], torch.LongTensor([mix_sig.shape[0]]), torch.stack(tgt_sig)
+        return torch.stack(mix_sig), torch.LongTensor([mix_sig[0].shape[0]]), torch.stack(tgt_sig)
 
     def __len__(self):
         return len(self.mix_set)
@@ -168,13 +171,18 @@ def _collate_fn_eval(batch):
     mixtures, filenames = load_mixtures(batch[0])
 
     # get batch of lengths of input sequences
-    ilens = np.array([mix.shape[0] for mix in mixtures])
+    ilens = np.array([mix[0].shape[0] for mix in mixtures])
 
     # perform padding and convert to tensor
     pad_value = 0
-    mixtures_pad = pad_list([torch.from_numpy(mix).float()
-                             for mix in mixtures], pad_value)
+    # mixtures_pad = pad_list([torch.from_numpy(mix).float()
+    #                          for mix in mixtures], pad_value)
     ilens = torch.from_numpy(ilens)
+
+    #mixtures_pad = mixtures_pad.permute((0, 2, 1)).contiguous()
+    mixtures_pad = torch.stack(mixtures[0])
+    mixtures_pad = mixtures_pad.reshape(1,7,ilens[0])
+
     return mixtures_pad, ilens, filenames
 
 
@@ -190,10 +198,20 @@ def load_mixtures(batch):
     # for each utterance
     for mix_info in mix_infos:
         mix_path = mix_info[0]
+        filename = mix_path[0][:-8] + ".wav"
         # read wav file
-        mix, _ = librosa.load(mix_path, sr=sample_rate)
-        mixtures.append(mix)
-        filenames.append(mix_path)
+        mix_files = mix_path
+        mix_array = []
+        for file_path in mix_files:
+            mix, _ = librosa.load(file_path, sr=sample_rate)
+            mix_array.append(mix)   
+
+        min_size= np.min([len(mix) for mix in mix_array])
+        mix_array = [torch.Tensor(mix[:min_size]) for mix in mix_array]
+
+        mixtures.append(mix_array)
+        filenames.append(filename)
+        
     return mixtures, filenames
 
 

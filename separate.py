@@ -16,24 +16,24 @@ import torch
 import tqdm
 import soundfile as sf
 
-from .data.data import EvalDataLoader, EvalDataset
-from . import distrib
-from .utils import remove_pad
+from svoice.data.data import EvalDataLoader, EvalDataset
+from svoice import distrib
+from svoice.utils import remove_pad
 
-from .utils import bold, deserialize_model, LogProgress
+from svoice.utils import bold, deserialize_model, LogProgress
 logger = logging.getLogger(__name__)
 
 
 parser = argparse.ArgumentParser("Speech separation using MulCat blocks")
-parser.add_argument("model_path", type=str, help="Model name")
-parser.add_argument("out_dir", type=str, default="exp/result",
+parser.add_argument("--model_path", type=str, default="checkpoint.th", help="Model name")
+parser.add_argument("--out_dir", type=str, default="exp/result",
                     help="Directory putting enhanced wav files")
 parser.add_argument("--mix_dir", type=str, default=None,
                     help="Directory including mix wav files")
-parser.add_argument("--mix_json", type=str, default=None,
+parser.add_argument("--mix_json", type=str, default="test/mix.json",
                     help="Json file including mix wav files")
 parser.add_argument('--device', default="cuda")
-parser.add_argument("--sample_rate", default=8000,
+parser.add_argument("--sample_rate", default=16000,
                     type=int, help="Sample rate")
 parser.add_argument("--batch_size", default=1, type=int, help="Batch size")
 parser.add_argument('-v', '--verbose', action='store_const', const=logging.DEBUG,
@@ -105,7 +105,7 @@ def separate(args, model=None, local_out_dir=None):
     eval_dataset = EvalDataset(
         mix_dir,
         mix_json,
-        batch_size=1,
+        batch_size=args.batch_size,
         sample_rate=args.sample_rate,
     )
     eval_loader = distrib.loader(

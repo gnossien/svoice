@@ -85,7 +85,7 @@ def evaluate(args, model=None, data_loader=None, sr=None):
 
                 pendings.append(
                     pool.submit(_run_metrics, sources, reorder_estimate, mixture, None,
-                                sr=sr))
+                                sr=sr, pesq= args.pesq))
                 total_cnt += sources.shape[0]
 
             for pending in LogProgress(logger, pendings, updates, name="Eval metrics"):
@@ -111,7 +111,8 @@ def _run_metrics(clean, estimate, mix, model, sr, pesq=False):
     estimate = estimate.numpy()
     clean = clean.numpy()
     mix = mix.numpy()
-    sisnr = cal_SISNRi(clean, estimate, mix)
+    #sisnr = cal_SISNRi(clean, estimate, mix)
+    sisnr = cal_SISNRt(clean, estimate)
     if pesq:
         pesq_i = cal_PESQ(clean, estimate, sr=sr)
         stoi_i = cal_STOI(clean, estimate, sr=sr)
@@ -196,6 +197,23 @@ def cal_SISNRi(src_ref, src_est, mix):
         avg_SISNRi += (sisnr - sisnrb)
     avg_SISNRi /= C
     return avg_SISNRi
+
+def cal_SISNRt(src_ref, src_est):
+    """Calculate Scale-Invariant Source-to-Noise Ratio improvement (SI-SNRi)
+    Args:
+        src_ref: numpy.ndarray, [B, C, T]
+        src_est: numpy.ndarray, [B, C, T], reordered by best PIT permutation
+        mix: numpy.ndarray, [T]
+    Returns:
+        average_SISNRi
+    """
+    avg_SISNRt = 0.0
+    B, C, T = src_ref.shape
+    for c in range(C):
+        sisnr = cal_SISNR(src_ref[:, c], src_est[:, c])
+        avg_SISNRt += (sisnr)
+    avg_SISNRt /= C
+    return avg_SISNRt   
 
 
 def main():

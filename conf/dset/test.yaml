@@ -1,0 +1,7 @@
+
+# @package dset
+train: egs/test/tr
+valid: egs/test/val
+test: egs/test/te
+mix_json: egs/test/tr/mix.json
+mix_dir:
