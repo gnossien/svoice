@@ -1,0 +1,7 @@
+
+# @package dset
+train: egs/data/4ch/train
+valid: egs/data/4ch/val
+test: egs/data/4ch/test
+mix_json: egs/data/4ch/test/mix.json
+mix_dir: 

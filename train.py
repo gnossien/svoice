@@ -112,7 +112,7 @@ def _main(args):
         run(args)
 
 
-@hydra.main(version_base="1.1", config_path="conf", config_name='config_7CH.yaml')
+@hydra.main(version_base="1.1", config_path="conf", config_name='config_4CH.yaml')
 def main(args):
     try:
         _main(args)
