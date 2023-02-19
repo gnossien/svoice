@@ -76,7 +76,10 @@ def evaluate(args, model=None, data_loader=None, sr=None):
                 # Forward
                 with torch.no_grad():
                     mixture /= mixture.max()
-                    estimate = model(mixture)[-1]
+                    estimate = model(mixture)
+                    if estimate.dim() == 4 :
+                        estimate = estimate[-1]
+
                 sisnr_loss, snr, estimate, reorder_estimate = cal_loss(
                     sources, estimate, lengths)
                 reorder_estimate = reorder_estimate.cpu()

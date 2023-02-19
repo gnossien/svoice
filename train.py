@@ -15,11 +15,8 @@ import time
 
 from omegaconf import DictConfig, OmegaConf
 import hydra
-
 from svoice.executor import start_ddp_workers
-
 logger = logging.getLogger(__name__)
-
 
 def run(args):
     import torch
@@ -27,16 +24,24 @@ def run(args):
     from svoice import distrib
     from svoice.data.data import Trainset, Validset
     from svoice.models.swave import SWave
+    from dnn.models.sudormrf import SuDORMRF
+
     from svoice.solver import Solver
 
     logger.info("Running on host %s", socket.gethostname())
     distrib.init(args)
+
+    torch.cuda.set_device('cuda:0')
 
     if args.model == "swave":
         kwargs = dict(args.swave)
         kwargs['sr'] = args.sample_rate
         kwargs['segment'] = args.segment
         model = SWave(**kwargs)
+    elif args.model == "sudormrf":
+        #kwargs = dict(args.sudormrf)
+        model = SuDORMRF()
+
     else:
         logger.fatal("Invalid model name %s", args.model)
         os._exit(1)
@@ -112,7 +117,7 @@ def _main(args):
         run(args)
 
 
-@hydra.main(version_base="1.1", config_path="conf", config_name='config_4CH.yaml')
+@hydra.main(version_base="1.1", config_path="conf", config_name='config_2Ch_sudormrf.yaml')
 def main(args):
     try:
         _main(args)

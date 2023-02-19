@@ -194,6 +194,10 @@ class Solver(object):
             mixture, lengths, sources = [x.to(self.device) for x in data]
             estimate_source = self.dmodel(mixture)
 
+            # for other models .. not stacted 
+            if estimate_source.dim() == 3 :
+                estimate_source = estimate_source[None, :]
+                
             # only eval last layer
             if cross_valid:
                 estimate_source = estimate_source[-1:]

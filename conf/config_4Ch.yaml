@@ -44,7 +44,7 @@ beta2: 0.999
 stft_loss: False
 stft_sc_factor: .5
 stft_mag_factor: .5
-epochs: 200
+epochs: 500
 batch_size: 2
 max_norm: 5
 # learning rate scheduling

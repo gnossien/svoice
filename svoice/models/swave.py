@@ -267,18 +267,60 @@ class SWave(nn.Module):
         return torch.stack(outputs)
 
 
+class eca_layer(nn.Module):
+    """Constructs a ECA module.
+    Args:
+        channel: Number of channels of the input feature map
+        k_size: Adaptive selection of kernel size
+    """
+    def __init__(self, k_size=3):
+        super(eca_layer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool1d(1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        # feature descriptor on the global spatial information
+        y = self.avg_pool(x)
+
+        # Two different branches of ECA module
+        y = self.conv(y.transpose(-1, -2)).transpose(-1, -2)
+
+        # Multi-scale information fusion
+        y = self.sigmoid(y)
+
+        return x * y.expand_as(x)
+
+
 class Encoder(nn.Module):
     def __init__(self,L, N):
         super(Encoder, self).__init__()
         self.L, self.N = L, N
-        # setting 50% overlap
-        self.conv = nn.Conv1d(
-            7, N, kernel_size=L, stride=L // 2, bias=False)
-
+        
+        self.eca_input = eca_layer()
+        self.eca_output = eca_layer()
+        self.conv = nn.Conv1d(7, N, kernel_size=L, stride=L // 2, bias=False)
+        
     def forward(self, mixture):
-        #mixture = torch.unsqueeze(mixture, 1)
+        mixture = self.eca_input(mixture)
         mixture_w = F.relu(self.conv(mixture))
+        mixture_w = self.eca_output(mixture_w)
         return mixture_w
+
+
+
+# class Encoder(nn.Module):
+#     def __init__(self,L, N):
+#         super(Encoder, self).__init__()
+#         self.L, self.N = L, N
+#         # setting 50% overlap
+#         self.conv = nn.Conv1d(
+#             7, N, kernel_size=L, stride=L // 2, bias=False)
+
+#     def forward(self, mixture):
+#         #mixture = torch.unsqueeze(mixture, 1)
+#         mixture_w = F.relu(self.conv(mixture))
+#         return mixture_w
 
 
 class Decoder(nn.Module):

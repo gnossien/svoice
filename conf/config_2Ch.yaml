@@ -4,7 +4,7 @@ defaults:
   - hydra/hydra_logging: colorlog
 
 # Dataset related
-sample_rate: 16000
+sample_rate: 8000
 segment: 4
 stride: 1    # in seconds, how much to stride between training examples
 pad: true   # if training sample is too short, pad it
@@ -45,7 +45,7 @@ stft_loss: False
 stft_sc_factor: .5
 stft_mag_factor: .5
 epochs: 100
-batch_size: 2
+batch_size: 4
 max_norm: 5
 # learning rate scheduling
 lr_sched: step # can be either step or plateau
