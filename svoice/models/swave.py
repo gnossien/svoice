@@ -224,7 +224,7 @@ class Separator(nn.Module):
 
 class SWave(nn.Module):
     @capture_init
-    def __init__(self, N, L, H, R, C, sr, segment, input_normalize):
+    def __init__(self, N, L, H, R, C, sr, segment, input_normalize, input_ch):
         super(SWave, self).__init__()
         # hyper-parameter
         self.N, self.L, self.H, self.R, self.C, self.sr, self.segment = N, L, H, R, C, sr, segment
@@ -239,7 +239,7 @@ class SWave(nn.Module):
             np.sqrt(2 * self.sr * self.segment / (self.L/2)))
 
         # model sub-networks
-        self.encoder = Encoder(L, N)
+        self.encoder = Encoder(input_ch, L, N)
         self.decoder = Decoder(L)
         self.separator = Separator(self.filter_dim + self.N, self.N, self.H,
                                    self.filter_dim, self.num_spk, self.layer, self.segment_size, self.input_normalize)
@@ -292,35 +292,34 @@ class eca_layer(nn.Module):
         return x * y.expand_as(x)
 
 
-class Encoder(nn.Module):
-    def __init__(self,L, N):
-        super(Encoder, self).__init__()
-        self.L, self.N = L, N
-        
-        self.eca_input = eca_layer()
-        self.eca_output = eca_layer()
-        self.conv = nn.Conv1d(7, N, kernel_size=L, stride=L // 2, bias=False)
-        
-    def forward(self, mixture):
-        mixture = self.eca_input(mixture)
-        mixture_w = F.relu(self.conv(mixture))
-        mixture_w = self.eca_output(mixture_w)
-        return mixture_w
-
-
-
 # class Encoder(nn.Module):
-#     def __init__(self,L, N):
+#     def __init__(self, C, L, N):
 #         super(Encoder, self).__init__()
 #         self.L, self.N = L, N
-#         # setting 50% overlap
-#         self.conv = nn.Conv1d(
-#             7, N, kernel_size=L, stride=L // 2, bias=False)
-
+        
+#         self.eca_input = eca_layer()
+#         self.eca_output = eca_layer()
+#         self.conv = nn.Conv1d(C, N, kernel_size=L, stride=L // 2, bias=False)
+        
 #     def forward(self, mixture):
-#         #mixture = torch.unsqueeze(mixture, 1)
+#         mixture = self.eca_input(mixture)
 #         mixture_w = F.relu(self.conv(mixture))
+#         mixture_w = self.eca_output(mixture_w)
 #         return mixture_w
+
+
+class Encoder(nn.Module):
+    def __init__(self, C, L, N):
+        super(Encoder, self).__init__()
+        self.L, self.N = L, N
+        # setting 50% overlap
+        self.conv = nn.Conv1d(
+            C, N, kernel_size=L, stride=L // 2, bias=False)
+
+    def forward(self, mixture):
+        #mixture = torch.unsqueeze(mixture, 1)
+        mixture_w = F.relu(self.conv(mixture))
+        return mixture_w
 
 
 class Decoder(nn.Module):

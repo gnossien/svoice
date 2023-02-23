@@ -181,7 +181,7 @@ def _collate_fn_eval(batch):
 
     #mixtures_pad = mixtures_pad.permute((0, 2, 1)).contiguous()
     mixtures_pad = torch.stack(mixtures[0])
-    mixtures_pad = mixtures_pad.reshape(1,7,ilens[0])
+    mixtures_pad = mixtures_pad.reshape(1,len(mixtures[0]),ilens[0])
 
     return mixtures_pad, ilens, filenames
 

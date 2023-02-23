@@ -31,7 +31,7 @@ def run(args):
     logger.info("Running on host %s", socket.gethostname())
     distrib.init(args)
 
-    torch.cuda.set_device('cuda:0')
+    torch.cuda.set_device(args.device)
 
     if args.model == "swave":
         kwargs = dict(args.swave)
@@ -117,7 +117,7 @@ def _main(args):
         run(args)
 
 
-@hydra.main(version_base="1.1", config_path="conf", config_name='config_2Ch_sudormrf.yaml')
+@hydra.main(version_base="1.1", config_path="conf", config_name='config_2_3_4.yaml')
 def main(args):
     try:
         _main(args)
